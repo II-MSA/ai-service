@@ -1,16 +1,15 @@
 name: apang-project
-
 services:
   # 1. Eureka Server
   eureka-server:
     image: hyun0629/eureka-server:1.0
     container_name: eureka-server
+    platform: linux/amd64
     ports:
       - "3101:3101"
     restart: always
 
   # 2. PostgreSQL DB
-  #추후 config hub에 등록
   apang-db:
     image: postgres:16-alpine
     container_name: apang-db
@@ -24,22 +23,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  ai-service:
-    build: .  # Dockerfile이 있는 위치
-    container_name: ai-service
-    ports:
-      - "19091:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://apang-db:5432/apang_db
-      - SPRING_DATASOURCE_USERNAME=apang
-      - SPRING_DATASOURCE_PASSWORD=apangpass
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:3101/eureka/
-      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
-    depends_on:
-      - apang-db
-      - eureka-server
-    restart: always
-
+# 볼륨 정의 (서비스와 같은 레벨)
 volumes:
   postgres_data:
