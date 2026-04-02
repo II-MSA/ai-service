@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.common.domain.BaseEntity;
@@ -22,7 +21,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "p_ai")
 @Access(AccessType.FIELD)
-@SQLRestriction("deleted_at IS NULL")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiEntity extends BaseEntity {
 
@@ -32,15 +30,8 @@ public class AiEntity extends BaseEntity {
     @Column(length = 36)
     private UUID id;
 
-    @JdbcTypeCode(SqlTypes.UUID)
-    @Column(nullable = false)
-    private UUID receiverId;
-
-    @Column(length = 100)
-    private String receiverSlackId;
-
-    @Column(length = 50)
-    private String receiverName;
+    @Embedded
+    private Receiver receiver;
 
     @Column(columnDefinition = "TEXT")
     private String generatedText;
@@ -55,11 +46,9 @@ public class AiEntity extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String reason;
 
-    public static AiEntity create(UUID receiverId, String receiverSlackId, String receiverName, String prompt) {
+    public static AiEntity create(Receiver receiver, String prompt) {
         AiEntity entity = new AiEntity();
-        entity.receiverId = receiverId;
-        entity.receiverSlackId = receiverSlackId;
-        entity.receiverName = receiverName;
+        entity.receiver = receiver;
         entity.prompt = prompt;
         entity.requestedAt = LocalDateTime.now();
         return entity;
@@ -75,7 +64,4 @@ public class AiEntity extends BaseEntity {
         super.delete(deletedBy);
     }
 
-    public void publishCompleted(AiEvent aiEvent) {
-        aiEvent.analysisCompleted(this);
-    }
 }

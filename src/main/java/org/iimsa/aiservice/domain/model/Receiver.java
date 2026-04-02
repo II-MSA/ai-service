@@ -30,5 +30,5 @@ public class Receiver {
     private String slackId;
 
     @Column(name = "receiver_name", length = 50)
-    private String name;
+    private String receiverName;
 }

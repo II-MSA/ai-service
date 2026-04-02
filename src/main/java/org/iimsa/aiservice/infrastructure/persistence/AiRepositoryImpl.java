@@ -41,7 +41,7 @@ public class AiRepositoryImpl implements AiRepository {
     public Page<AiEntity> findByReceiverId(UUID receiverId, Pageable pageable) {
         List<AiEntity> content = queryFactory
                 .selectFrom(ai)
-                .where(ai.receiverId.eq(receiverId))
+                .where(ai.receiver.id.eq(receiverId))
                 .orderBy(ai.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -50,7 +50,7 @@ public class AiRepositoryImpl implements AiRepository {
         long total = queryFactory
                 .select(ai.count())
                 .from(ai)
-                .where(ai.receiverId.eq(receiverId))
+                .where(ai.receiver.id.eq(receiverId))
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total);

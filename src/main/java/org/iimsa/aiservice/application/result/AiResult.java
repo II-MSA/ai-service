@@ -22,9 +22,9 @@ public record AiResult(
     public static AiResult from(AiEntity ai) {
         return new AiResult(
                 ai.getId(),
-                ai.getReceiverId(),
-                ai.getReceiverName(),
-                ai.getReceiverSlackId(),
+                ai.getReceiver().getId(),
+                ai.getReceiver().getReceiverName(),
+                ai.getReceiver().getSlackId(),
                 ai.getPrompt(),
                 ai.getGeneratedText(),
                 ai.getReason(),
