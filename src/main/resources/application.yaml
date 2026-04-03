@@ -13,6 +13,17 @@ spring:
       discovery:
         enabled: true
         service-id: config-server
+  kafka:
+    consumer:
+      group-id: ai-service-group
+    topics:
+      # Inbound (소비)
+      order-confirmed: order.confirmed.v1
+      delivery-assigned: delivery.assigned.v1
+      ai-analysis-request: ai.analysis.request.v1
+      # Outbound (발행)
+      ai-analysis-done: ai.analysis.done.v1
+
 
   ai:
     openai:
