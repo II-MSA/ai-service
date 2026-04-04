@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
+import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.common.domain.BaseEntity;
 
 /**
@@ -68,6 +69,10 @@ public class AiEntity extends BaseEntity {
 
     public void softDelete(String deletedBy) {
         super.delete(deletedBy);
+    }
+
+    public void publishCompleted(AiEvent aiEvent) {
+        aiEvent.analysisCompleted(this);
     }
 
 }

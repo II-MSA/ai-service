@@ -22,7 +22,7 @@ public class KafkaAiEventProducer implements AiEvent {
     public void analysisCompleted(AiEntity ai) {
         AiAnalysisCompletedPayload payload = AiAnalysisCompletedPayload.from(ai);
 
-        log.info("[KafkaAiEventProducer] analysisCompleted 이벤트 발행. -> notification. aiId={}, topic={}",
+        log.info("[KafkaAiEventProducer] analysisCompleted 이벤트 발행. ai -> notification. aiId={}, topic={}",
                 ai.getId(), properties.getAiAnalysisDone());
 
         Events.trigger(
@@ -38,5 +38,5 @@ public class KafkaAiEventProducer implements AiEvent {
         String traceId = MDC.get("traceId");
         return StringUtils.hasText(traceId) ? traceId : UUID.randomUUID().toString();
     }
-    
+
 }

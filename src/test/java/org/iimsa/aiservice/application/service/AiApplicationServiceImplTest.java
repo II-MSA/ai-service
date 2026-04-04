@@ -1,12 +1,25 @@
 package org.iimsa.aiservice.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.iimsa.aiservice.application.dto.command.AiAnalysisRequestedCommand;
 import org.iimsa.aiservice.application.dto.query.GetAiQuery;
 import org.iimsa.aiservice.application.result.AiResult;
+import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.aiservice.domain.exception.AiNotFoundException;
 import org.iimsa.aiservice.domain.model.AiEntity;
 import org.iimsa.aiservice.domain.model.Receiver;
 import org.iimsa.aiservice.domain.repository.AiRepository;
+import org.iimsa.aiservice.domain.service.AiAnalysisService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,16 +33,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.times;
-
 @Slf4j
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiApplicationServiceImpl 테스트")
@@ -41,6 +44,10 @@ class AiApplicationServiceImplTest {
     @InjectMocks
     private AiApplicationServiceImpl aiApplicationService;
 
+    @Mock
+    AiAnalysisService aiAnalysisService;
+    @Mock
+    AiEvent aiEvent;
     // ───────────────────────────────────────────────
     // 테스트 픽스처
     // ───────────────────────────────────────────────
@@ -59,6 +66,32 @@ class AiApplicationServiceImplTest {
         aiEntity.complete("최적 경로는 A→B→C입니다.", "AI 자동 분석");
 
         log.info("[setUp] aiId={}, receiverId={}", aiId, receiverId);
+    }
+
+    @Test
+    void handleAiAnalysisRequested_성공() {
+        // given
+        AiAnalysisRequestedCommand command = new AiAnalysisRequestedCommand(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "U123SLACK",
+                "홍길동",
+                List.of(new AiAnalysisRequestedCommand.Destination("서울", 37.5, 127.0, "서울시 강남구"))
+        );
+
+        AiEntity mockAi = AiEntity.create(
+                new Receiver(command.managerId(), command.managerSlackId(), command.receiverName()),
+                "프롬프트"
+        );
+        given(aiRepository.save(any())).willReturn(mockAi);
+        given(aiAnalysisService.analyze(any())).willReturn("최적 경로: 서울 → ...");
+
+        // when
+        aiApplicationService.handleAiAnalysisRequested(command);
+
+        // then
+        then(aiAnalysisService).should().analyze(any());
+        then(aiEvent).should().analysisCompleted(any());
     }
 
     // ───────────────────────────────────────────────
@@ -139,7 +172,8 @@ class AiApplicationServiceImplTest {
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent().getFirst().receiverId()).isEqualTo(receiverId);
 
-            log.info("[getAiListByReceiver_success] then - 조회된 receiverId={}", result.getContent().getFirst().receiverId());
+            log.info("[getAiListByReceiver_success] then - 조회된 receiverId={}",
+                    result.getContent().getFirst().receiverId());
             then(aiRepository).should(times(1)).findByReceiverId(receiverId, pageable);
         }
 
@@ -242,5 +276,7 @@ class AiApplicationServiceImplTest {
             then(aiRepository).should(times(1)).findById(aiId);
             then(aiRepository).should(times(0)).save(aiEntity);
         }
+
+
     }
 }
