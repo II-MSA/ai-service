@@ -20,7 +20,7 @@ public class KafkaAiEventProducer implements AiEvent {
 
     @Override
     public void analysisCompleted(AiEntity ai) {
-        AiAnalysisCompletedPayload payload = AiAnalysisCompletedPayload.from(ai);
+        AiAnalysisCompletedPayload payload = toPayload(ai);
 
         log.info("[KafkaAiEventProducer] analysisCompleted 이벤트 발행. ai -> notification. aiId={}, topic={}",
                 ai.getId(), properties.getAiAnalysisDone());
@@ -37,6 +37,18 @@ public class KafkaAiEventProducer implements AiEvent {
     private String getTraceId() {
         String traceId = MDC.get("traceId");
         return StringUtils.hasText(traceId) ? traceId : UUID.randomUUID().toString();
+    }
+
+    //추후 mapper로 이동 가능성 있습니다.
+    public AiAnalysisCompletedPayload toPayload(AiEntity ai) {
+        return new AiAnalysisCompletedPayload(
+                ai.getId(),
+                ai.getReceiver().getId(),
+                ai.getReceiver().getReceiverName(),
+                ai.getReceiver().getSlackId(),
+                ai.getGeneratedText(),
+                ai.getReason()
+        );
     }
 
 }

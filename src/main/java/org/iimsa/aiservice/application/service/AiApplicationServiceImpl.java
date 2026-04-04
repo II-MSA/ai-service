@@ -4,16 +4,18 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.iimsa.aiservice.application.dto.command.AiAnalysisRequestedCommand;
 import org.iimsa.aiservice.application.dto.query.GetAiQuery;
 import org.iimsa.aiservice.application.result.AiResult;
+import org.iimsa.aiservice.domain.event.AiAnalysisRequestedPayload;
 import org.iimsa.aiservice.domain.event.AiEvent;
+import org.iimsa.aiservice.domain.event.AnalysisResponse;
 import org.iimsa.aiservice.domain.exception.AiNotFoundException;
 import org.iimsa.aiservice.domain.model.AiEntity;
 import org.iimsa.aiservice.domain.model.Receiver;
 import org.iimsa.aiservice.domain.repository.AiRepository;
 import org.iimsa.aiservice.domain.service.AiAnalysisService;
 import org.iimsa.common.util.SecurityUtil;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,23 +69,23 @@ public class AiApplicationServiceImpl implements AiApplicationService {
      */
     @Override
     @Transactional
-    public void handleAiAnalysisRequested(AiAnalysisRequestedCommand command) {
+    public void handleAiAnalysisRequested(AiAnalysisRequestedPayload payload) {
         log.info("[handleAiAnalysisRequested] deliveryId={}, managerId={}, managerSlackId={}",
-                command.deliveryId(), command.managerId(), command.managerSlackId());
+                payload.deliveryId(), payload.managerId(), payload.managerSlackId());
 
-        String prompt = buildRouteOptimizationPrompt(command);
+        String prompt = buildRouteOptimizationPrompt(payload);
 
         Receiver receiver = new Receiver(
-                command.managerId(),
-                command.managerSlackId(),
-                command.receiverName()
+                payload.managerId(),
+                payload.managerSlackId(),
+                payload.receiverName()
         );
 
         AiEntity ai = AiEntity.create(receiver, prompt);
         aiRepository.save(ai);
 
-        String generatedText = aiAnalysisService.analyze(prompt);
-        ai.complete(generatedText, "AI 경로 자동 분석");
+        AnalysisResponse response = aiAnalysisService.analyze(prompt);
+        ai.complete(response.toString(), response.detailedReason());
         aiRepository.save(ai);
 
         ai.publishCompleted(aiEvent);
@@ -91,11 +93,24 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         log.info("[handleAiAnalysisRequested] AI 분석 완료. aiId={}", ai.getId());
     }
 
-    private String buildRouteOptimizationPrompt(AiAnalysisRequestedCommand command) {
-        String destinationList = command.destinations().stream()
+    private String buildRouteOptimizationPrompt(AiAnalysisRequestedPayload payload) {
+        String destinationList = payload.destinations().stream()
                 .map(d -> String.format("  - %s (위도: %.6f, 경도: %.6f, 주소: %s)",
                         d.name(), d.lat(), d.lng(), d.addr()))
                 .collect(Collectors.joining("\n"));
+
+        var converter = new BeanOutputConverter<>(AnalysisResponse.class);
+
+        String format = converter.getFormat(); // "결과는 JSON으로... routeOrder 필드는..." 같은 문장 생성
+
+//aiAnalysisService.analyze(prompt);
+//        @Override
+//        public AnalysisResponse analyze(String prompt) {
+//            return chatClient.prompt()
+//                    .user(prompt)
+//                    .call()
+//                    .entity(AnalysisResponse.class);
+//        }
 
         return String.format(
                 "다음 배송 목적지들의 최적 경로를 분석하여 순서와 이유를 알려주세요.\n" +
@@ -103,11 +118,10 @@ public class AiApplicationServiceImpl implements AiApplicationService {
                         "배송 ID: %s\n" +
                         "목적지 목록:\n%s\n" +
                         "최적 경로 순서와 각 선택 이유를 간결하게 작성해 주세요.",
-                command.receiverName(),
-                command.deliveryId(),
+                payload.receiverName(),
+                payload.deliveryId(),
                 destinationList
         );
+        // analyze()에서 .entity를 사용했으므로 프롬포트 끝에 format을 직접 안넣어도 자동으로 붙는다.
     }
-
-
 }

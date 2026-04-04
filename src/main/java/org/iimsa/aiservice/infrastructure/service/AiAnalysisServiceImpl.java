@@ -2,6 +2,7 @@ package org.iimsa.aiservice.infrastructure.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.iimsa.aiservice.domain.event.AnalysisResponse;
 import org.iimsa.aiservice.domain.service.AiAnalysisService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
@@ -14,11 +15,11 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
     private final ChatClient chatClient;
 
     @Override
-    public String analyze(String prompt) {
-        String result = chatClient.prompt()
+    public AnalysisResponse analyze(String prompt) {
+        AnalysisResponse result = chatClient.prompt()
                 .user(prompt)
                 .call()
-                .content();
+                .entity(AnalysisResponse.class);
 
         log.info("[AiAnalysisServiceImpl] AI 분석 결과 result {}", result != null ? result : 0);
 

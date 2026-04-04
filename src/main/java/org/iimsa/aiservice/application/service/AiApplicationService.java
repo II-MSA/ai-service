@@ -1,9 +1,9 @@
 package org.iimsa.aiservice.application.service;
 
 import java.util.UUID;
-import org.iimsa.aiservice.application.dto.command.AiAnalysisRequestedCommand;
 import org.iimsa.aiservice.application.dto.query.GetAiQuery;
 import org.iimsa.aiservice.application.result.AiResult;
+import org.iimsa.aiservice.domain.event.AiAnalysisRequestedPayload;
 import org.springframework.data.domain.Page;
 
 /**
@@ -33,5 +33,5 @@ public interface AiApplicationService {
     /**
      * AI 직접 분석 요청 이벤트 처리
      */
-    void handleAiAnalysisRequested(AiAnalysisRequestedCommand command);
+    void handleAiAnalysisRequested(AiAnalysisRequestedPayload payload);
 }

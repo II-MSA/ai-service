@@ -29,7 +29,7 @@ public class AiAnalysisRequestedConsumer {
             log.info("[AI] ai.analysis.request.v1 수신. key={}", record.key());
             AiAnalysisRequestedPayload payload = objectMapper.readValue(record.value(),
                     AiAnalysisRequestedPayload.class);
-            aiApplicationService.handleAiAnalysisRequested(payload.toCommand());
+            aiApplicationService.handleAiAnalysisRequested(payload);
         } catch (Exception e) {
             log.error("[AI] ai.analysis.request.v1 처리 실패.", e);
             throw new RuntimeException(e);

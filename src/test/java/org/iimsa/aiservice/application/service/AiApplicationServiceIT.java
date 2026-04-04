@@ -3,6 +3,7 @@ package org.iimsa.aiservice.application.service;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import lombok.extern.slf4j.Slf4j;
+import org.iimsa.aiservice.domain.event.AnalysisResponse;
 import org.iimsa.aiservice.domain.service.AiAnalysisService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,13 +35,16 @@ class AiApplicationServiceIT {
                 """;
 
         // when
-        String result = aiAnalysisService.analyze(prompt);
+        AnalysisResponse result = aiAnalysisService.analyze(prompt);
 
         // then
         log.info("=== AI 분석 결과 ===");
-        log.info(result);
+        log.info("최적 경로 순서: {}", result.routeOrder());
+        log.info("상세 이유: {}", result.detailedReason());
         log.info("==================");
 
-        assertThat(result).isNotBlank();
+        assertThat(result).isNotNull(); // 결과 객체 자체가 있어야 함
+        assertThat(result.routeOrder()).isNotNull(); // 경로 리스트가 생성되어야 함
+        assertThat(result.detailedReason()).isNotBlank(); // 상세 이유가 비어있지 않아야 함
     }
 }
