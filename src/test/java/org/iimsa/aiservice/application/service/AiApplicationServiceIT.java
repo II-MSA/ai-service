@@ -35,7 +35,7 @@ class AiApplicationServiceIT {
                 """;
 
         // when
-        AnalysisResponse result = aiAnalysisService.analyze(prompt);
+        AnalysisResponse result = aiAnalysisService.analyzeStructured(prompt);
 
         // then
         log.info("=== AI 분석 결과 ===");

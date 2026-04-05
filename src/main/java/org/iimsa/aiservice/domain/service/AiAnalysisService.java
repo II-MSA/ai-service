@@ -9,5 +9,8 @@ public interface AiAnalysisService {
     /**
      * 주어진 프롬프트를 AI에게 전달하고 생성 결과를 반환합니다.
      */
-    AnalysisResponse analyze(String prompt);
+    AnalysisResponse analyzeStructured(String prompt);
+
+    String analyze(String prompt);
+
 }

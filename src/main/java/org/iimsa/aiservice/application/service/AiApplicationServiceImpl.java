@@ -9,6 +9,7 @@ import org.iimsa.aiservice.application.result.AiResult;
 import org.iimsa.aiservice.domain.event.AiAnalysisRequestedPayload;
 import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.aiservice.domain.event.AnalysisResponse;
+import org.iimsa.aiservice.domain.event.OrderConfirmedPayload;
 import org.iimsa.aiservice.domain.exception.AiNotFoundException;
 import org.iimsa.aiservice.domain.model.AiEntity;
 import org.iimsa.aiservice.domain.model.Receiver;
@@ -84,7 +85,7 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         AiEntity ai = AiEntity.create(receiver, prompt);
         aiRepository.save(ai);
 
-        AnalysisResponse response = aiAnalysisService.analyze(prompt);
+        AnalysisResponse response = aiAnalysisService.analyzeStructured(prompt);
         ai.complete(response.toString(), response.detailedReason());
         aiRepository.save(ai);
 
@@ -93,24 +94,35 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         log.info("[handleAiAnalysisRequested] AI 분석 완료. aiId={}", ai.getId());
     }
 
+    @Override
+    @Transactional
+    public void handleOrderConfirmed(OrderConfirmedPayload payload) {
+        log.info("[handleOrderConfirmed] orderId={}, hubId={}", payload.orderId(), payload.hubId());
+
+        String prompt = buildOrderConfirmedPrompt(payload);
+
+        Receiver receiver = new Receiver(
+                payload.hubId(),
+                payload.hubManagerSlackId(),
+                payload.hubManagerName()
+        );
+
+        AiEntity ai = AiEntity.create(receiver, prompt);
+        aiRepository.save(ai);
+
+        String result = aiAnalysisService.analyze(prompt);
+        ai.complete(result, "전달 이유"); //reason 고민 해봐야함.
+        aiRepository.save(ai);
+        ai.publishCompleted(aiEvent);
+
+        log.info("[handleOrderConfirmed] AI 분석 완료. aiId={}", ai.getId());
+    }
+
     private String buildRouteOptimizationPrompt(AiAnalysisRequestedPayload payload) {
         String destinationList = payload.destinations().stream()
                 .map(d -> String.format("  - %s (위도: %.6f, 경도: %.6f, 주소: %s)",
                         d.name(), d.lat(), d.lng(), d.addr()))
                 .collect(Collectors.joining("\n"));
-
-        var converter = new BeanOutputConverter<>(AnalysisResponse.class);
-
-        String format = converter.getFormat(); // "결과는 JSON으로... routeOrder 필드는..." 같은 문장 생성
-
-//aiAnalysisService.analyze(prompt);
-//        @Override
-//        public AnalysisResponse analyze(String prompt) {
-//            return chatClient.prompt()
-//                    .user(prompt)
-//                    .call()
-//                    .entity(AnalysisResponse.class);
-//        }
 
         return String.format(
                 "다음 배송 목적지들의 최적 경로를 분석하여 순서와 이유를 알려주세요.\n" +
@@ -124,4 +136,26 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         );
         // analyze()에서 .entity를 사용했으므로 프롬포트 끝에 format을 직접 안넣어도 자동으로 붙는다.
     }
+
+    private String buildOrderConfirmedPrompt(OrderConfirmedPayload payload) {
+        var converter = new BeanOutputConverter<>(AnalysisResponse.class);
+        String format = converter.getFormat();
+        return String.format(
+                "주문이 확인되었습니다. 허브 매니저(%s)에게 아래 정보를 안내해 주세요.\n" +
+                        "- 상품: %s\n" +
+                        "- 수량: %d\n" +
+                        "- 수령 업체: %s\n" +
+                        "- 업체 담당자: %s\n" +
+                        "친절한 말투로 배송 안내 메시지를 작성해 주세요.",
+                payload.hubManagerName(),
+                payload.productName(),
+                payload.quantity(),
+                payload.receiverCompanyName(),
+                payload.companyManagerName()
+        );
+    }
+
+
 }
+
+

@@ -15,7 +15,7 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
     private final ChatClient chatClient;
 
     @Override
-    public AnalysisResponse analyze(String prompt) {
+    public AnalysisResponse analyzeStructured(String prompt) {
         AnalysisResponse result = chatClient.prompt()
                 .user(prompt)
                 .call()
@@ -26,5 +26,13 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
         return result;
     }
 
-
+    @Override
+    public String analyze(String prompt) {
+        String result = chatClient.prompt()
+                .user(prompt)
+                .call()
+                .content();
+        log.info("[AiAnalysisServiceImpl] AI 분석 결과: {}", result);
+        return result;
+    }
 }

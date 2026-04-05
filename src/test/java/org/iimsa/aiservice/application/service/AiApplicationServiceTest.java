@@ -65,7 +65,7 @@ class AiApplicationServiceTest {
         given(aiRepository.save(any())).willReturn(mockAi);
 
         // [핵심 수정] 이제 분석 서비스는 AnalysisResponse 객체를 리턴합니다.
-        given(aiAnalysisService.analyze(anyString())).willReturn(mockResponse);
+        given(aiAnalysisService.analyzeStructured(anyString())).willReturn(mockResponse);
 
         // 2. When: 로직 실행
         aiApplicationService.handleAiAnalysisRequested(payload);
