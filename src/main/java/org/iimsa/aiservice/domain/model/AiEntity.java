@@ -1,21 +1,25 @@
 package org.iimsa.aiservice.domain.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Access;
+import jakarta.persistence.AccessType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.common.domain.BaseEntity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 /**
- * AI 애그리거트 루트
- * - 외부 AI API 요청/응답 이력을 관리합니다.
- * - 수신자(receiver) 정보를 스냅샷으로 보관합니다.
+ * AI 애그리거트 루트 - 외부 AI API 요청/응답 이력을 관리합니다. - 수신자(receiver) 정보를 스냅샷으로 보관합니다.
  */
 @Getter
 @Entity
