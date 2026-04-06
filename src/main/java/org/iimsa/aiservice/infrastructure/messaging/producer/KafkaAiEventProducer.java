@@ -3,9 +3,9 @@ package org.iimsa.aiservice.infrastructure.messaging.producer;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.iimsa.aiservice.domain.event.AiAnalysisCompletedPayload;
 import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.aiservice.domain.model.AiEntity;
+import org.iimsa.aiservice.domain.payload.AiAnalysisCompletedPayload;
 import org.iimsa.common.event.Events;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ public class KafkaAiEventProducer implements AiEvent {
         Events.trigger(
                 getTraceId(),
                 "AI",
-                "ANALYSIS_COMPLETED",
+                payload.aiId().toString(),
                 properties.getAiAnalysisDone(),
                 payload
         );

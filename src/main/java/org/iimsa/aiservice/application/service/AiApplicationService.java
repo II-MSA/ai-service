@@ -3,8 +3,9 @@ package org.iimsa.aiservice.application.service;
 import java.util.UUID;
 import org.iimsa.aiservice.application.dto.query.GetAiQuery;
 import org.iimsa.aiservice.application.result.AiResult;
-import org.iimsa.aiservice.domain.event.AiAnalysisRequestedPayload;
-import org.iimsa.aiservice.domain.event.OrderConfirmedPayload;
+import org.iimsa.aiservice.domain.payload.AiAnalysisRequestedPayload;
+import org.iimsa.aiservice.domain.payload.DeliveryAssignedPayload;
+import org.iimsa.aiservice.domain.payload.OrderConfirmedPayload;
 import org.springframework.data.domain.Page;
 
 /**
@@ -37,4 +38,6 @@ public interface AiApplicationService {
     void handleAiAnalysisRequested(AiAnalysisRequestedPayload payload);
 
     void handleOrderConfirmed(OrderConfirmedPayload payload);
+
+    void handleDeliveryAssigned(DeliveryAssignedPayload payload);
 }

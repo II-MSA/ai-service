@@ -6,13 +6,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.iimsa.aiservice.application.dto.query.GetAiQuery;
 import org.iimsa.aiservice.application.result.AiResult;
-import org.iimsa.aiservice.domain.event.AiAnalysisRequestedPayload;
 import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.aiservice.domain.event.AnalysisResponse;
-import org.iimsa.aiservice.domain.event.OrderConfirmedPayload;
 import org.iimsa.aiservice.domain.exception.AiNotFoundException;
 import org.iimsa.aiservice.domain.model.AiEntity;
 import org.iimsa.aiservice.domain.model.Receiver;
+import org.iimsa.aiservice.domain.payload.AiAnalysisRequestedPayload;
+import org.iimsa.aiservice.domain.payload.DeliveryAssignedPayload;
+import org.iimsa.aiservice.domain.payload.OrderConfirmedPayload;
 import org.iimsa.aiservice.domain.repository.AiRepository;
 import org.iimsa.aiservice.domain.service.AiAnalysisService;
 import org.iimsa.common.util.SecurityUtil;
@@ -130,6 +131,34 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         log.info("[handleOrderConfirmed] AI 분석 완료. hubAiId={}, companyAiId={}", hubAi.getId(), companyAi.getId());
     }
 
+    /**
+     * delivery.assigned.v1 처리 - 배달 담당자 배정 시 경로 요약을 AI로 안내합니다.
+     */
+    @Override
+    @Transactional
+    public void handleDeliveryAssigned(DeliveryAssignedPayload payload) {
+        log.info("[handleDeliveryAssigned] deliveryId={}, deliveryManagerId={}",
+                payload.deliveryId(), payload.deliveryManagerId());
+
+        String prompt = buildDeliveryAssignedPrompt(payload);
+
+        Receiver receiver = new Receiver(
+                payload.deliveryManagerId(),
+                payload.deliveryManagerSlackId(),
+                payload.deliveryManagerName()
+        );
+
+        AiEntity ai = AiEntity.create(receiver, prompt);
+        aiRepository.save(ai);
+
+        String result = aiAnalysisService.analyze(prompt);
+        ai.complete(result, null);
+        aiRepository.save(ai);
+        ai.publishCompleted(aiEvent);
+
+        log.info("[handleDeliveryAssigned] AI 분석 완료. aiId={}", ai.getId());
+    }
+
     private String buildHubManagerPrompt(OrderConfirmedPayload payload) {
         return String.format(
                 "주문이 확인되었습니다. 허브 매니저(%s)에게 아래 정보를 안내해 주세요.\n" +
@@ -178,6 +207,22 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         );
         // analyze()에서 .entity를 사용했으므로 프롬포트 끝에 format을 직접 안넣어도 자동으로 붙는다.
     }
+
+    //delivery.assigned.v1 처리
+    private String buildDeliveryAssignedPrompt(DeliveryAssignedPayload payload) {
+        return String.format(
+                "배송이 배정되었습니다. 배송기사(%s)에게 아래 배송 경로를 안내해 주세요.\n" +
+                        "- 상품: %s\n" +
+                        "- 수령 업체: %s\n" +
+                        "- 배송 경로: %s\n" +
+                        "친절한 말투로 배송 경로 안내 메시지를 작성해 주세요.",
+                payload.deliveryManagerName(),
+                payload.productName(),
+                payload.receiverCompanyName(),
+                payload.routeSummary()
+        );
+    }
+
 }
 
 

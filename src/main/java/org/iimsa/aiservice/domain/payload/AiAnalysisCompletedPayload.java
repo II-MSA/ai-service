@@ -1,4 +1,4 @@
-package org.iimsa.aiservice.domain.event;
+package org.iimsa.aiservice.domain.payload;
 
 //보낼 데이터
 // UUID aiId // AI 분석 기록 ID UUID receiverId // 수신자 ID String receiverName // 수신자 이름 String receiverSlackId

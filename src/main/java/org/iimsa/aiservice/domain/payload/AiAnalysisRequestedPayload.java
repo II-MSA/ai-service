@@ -1,4 +1,4 @@
-package org.iimsa.aiservice.domain.event;
+package org.iimsa.aiservice.domain.payload;
 
 import java.util.List;
 import java.util.UUID;

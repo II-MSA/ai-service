@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component //component를 안 붙인다면 @EnableConfigurationProperties(AiTopicProperties.class)로 스프링에게 스캔 시도
-@ConfigurationProperties(prefix = "kafka.topics")
+@ConfigurationProperties(prefix = "spring.kafka.topics")
 public class AiTopicProperties {
 
     private String aiAnalysisDone;

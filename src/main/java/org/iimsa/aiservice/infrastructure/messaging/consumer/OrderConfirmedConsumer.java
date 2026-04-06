@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.iimsa.aiservice.application.service.AiApplicationService;
-import org.iimsa.aiservice.domain.event.OrderConfirmedPayload;
+import org.iimsa.aiservice.domain.payload.OrderConfirmedPayload;
 import org.iimsa.common.messaging.annotation.IdempotentConsumer;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
