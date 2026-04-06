@@ -15,7 +15,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
+import org.iimsa.aiservice.domain.event.AiEvent;
 import org.iimsa.common.domain.BaseEntity;
 
 /**
