@@ -76,3 +76,7 @@ tasks.named('test') {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << '-parameters'
 }
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}

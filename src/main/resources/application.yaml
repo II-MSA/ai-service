@@ -44,6 +44,10 @@ spring:
       ddl-auto: update
     show-sql: true
 
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}
+
 eureka:
   instance:
     prefer-ip-address: false

@@ -1,7 +1,7 @@
 package org.iimsa.aiservice.application.service;
 
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.iimsa.aiservice.application.dto.query.GetAiQuery;
@@ -16,7 +16,9 @@ import org.iimsa.aiservice.domain.payload.DeliveryAssignedPayload;
 import org.iimsa.aiservice.domain.payload.OrderConfirmedPayload;
 import org.iimsa.aiservice.domain.repository.AiRepository;
 import org.iimsa.aiservice.domain.service.AiAnalysisService;
+import org.iimsa.aiservice.infrastructure.tool.NavigationTools;
 import org.iimsa.common.util.SecurityUtil;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,8 @@ public class AiApplicationServiceImpl implements AiApplicationService {
     private final AiRepository aiRepository;
     private final AiAnalysisService aiAnalysisService;
     private final AiEvent aiEvent;
+    private final NavigationTools navigationTools;
+    private final ChatClient chatClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -74,24 +78,33 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         log.info("[handleAiAnalysisRequested] deliveryId={}, managerId={}, managerSlackId={}",
                 payload.deliveryId(), payload.managerId(), payload.managerSlackId());
 
-        String prompt = buildRouteOptimizationPrompt(payload);
+        //payload에서 Destination(tring name,double lat,double lng,String addr) 을 꺼낸다.
+        List<String> addresses = payload.destinations().stream()
+                .map(AiAnalysisRequestedPayload.Destination::addr)
+                .toList();
 
-        Receiver receiver = new Receiver(
-                payload.managerId(),
-                payload.managerSlackId(),
-                payload.receiverName()
-        );
+        //전체 경로의 최적 순서와 시간을 계산하는 메서드를 호출
+        List<NavigationTools.RouteInfo> realRouteData = navigationTools.calculateOptimizedRoutes(addresses);
 
+        //페르소나 주입
+        String prompt = buildProfessionalPrompt(payload, realRouteData);
+
+        //기록 저장 (시작)
+        Receiver receiver = new Receiver(payload.managerId(), payload.managerSlackId(), payload.receiverName());
         AiEntity ai = AiEntity.create(receiver, prompt);
         aiRepository.save(ai);
+        //요청시간 주입
 
+        // 4. AI 분석
         AnalysisResponse response = aiAnalysisService.analyzeStructured(prompt);
+
+        // 5. 완료 처리
+        //완료 시간 주입
         ai.complete(response.toString(), response.detailedReason());
         aiRepository.save(ai);
 
         ai.publishCompleted(aiEvent);
-
-        log.info("[handleAiAnalysisRequested] AI 분석 완료. aiId={}", ai.getId());
+        log.info("[handleAiAnalysisRequested] AI 분석 완료! aiId={}", ai.getId());
     }
 
     //주문 완료시. order -> ai
@@ -189,23 +202,21 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         );
     }
 
-    private String buildRouteOptimizationPrompt(AiAnalysisRequestedPayload payload) {
-        String destinationList = payload.destinations().stream()
-                .map(d -> String.format("  - %s (위도: %.6f, 경도: %.6f, 주소: %s)",
-                        d.name(), d.lat(), d.lng(), d.addr()))
-                .collect(Collectors.joining("\n"));
+    private String buildProfessionalPrompt(AiAnalysisRequestedPayload payload, List<NavigationTools.RouteInfo> routes) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(
+                "지금부터 당신의 역할은 10년 경력의 베테랑 배송 마스터입니다. 아래 카카오 내비게이션 엔진이 계산한 실시간 최적 경로 데이터를 바탕으로 배송 기사님께 전문적인 조언을 해주세요.\n\n");
+        sb.append("### 실시간 경로 데이터 ###\n");
+        for (int i = 0; i < routes.size(); i++) {
+            sb.append(String.format("%d. %s (좌표: %.6f, %.6f)\n",
+                    i + 1, routes.get(i).address(), routes.get(i).coords().lat(), routes.get(i).coords().lng()));
+        }
+        sb.append("\n### 요구사항 ###\n");
+        sb.append("1. 위 순서대로 배송했을 때의 장점을 베테랑의 시선에서 설명해주세요.\n");
+        sb.append("2. 기사님(%s님)을 향한 짧은 응원의 메시지를 포함해주세요.\n");
+        sb.append("3. 답변은 존댓말로, 친절하고 전문적인 말투여야 합니다.");
 
-        return String.format(
-                "다음 배송 목적지들의 최적 경로를 분석하여 순서와 이유를 알려주세요.\n" +
-                        "담당자: %s\n" +
-                        "배송 ID: %s\n" +
-                        "목적지 목록:\n%s\n" +
-                        "최적 경로 순서와 각 선택 이유를 간결하게 작성해 주세요.",
-                payload.receiverName(),
-                payload.deliveryId(),
-                destinationList
-        );
-        // analyze()에서 .entity를 사용했으므로 프롬포트 끝에 format을 직접 안넣어도 자동으로 붙는다.
+        return sb.toString();
     }
 
     //delivery.assigned.v1 처리
