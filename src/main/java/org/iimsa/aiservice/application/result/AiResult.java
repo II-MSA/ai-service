@@ -3,7 +3,6 @@ package org.iimsa.aiservice.application.result;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.iimsa.aiservice.domain.model.AiEntity;
-import org.iimsa.aiservice.domain.model.Receiver;
 import org.springframework.data.domain.Page;
 
 /**
@@ -21,11 +20,11 @@ public record AiResult(
 ) {
 
     public static AiResult from(AiEntity ai) {
-        Receiver receiver = ai.getReceiver();
         return new AiResult(
-                ai.getId(), receiver != null ? receiver.getId() : null,
-                receiver != null ? receiver.getReceiverName() : null,
-                receiver != null ? receiver.getSlackId() : null,
+                ai.getId(),
+                ai.getReceiver().getId(),
+                ai.getReceiver().getReceiverName(),
+                ai.getReceiver().getSlackId(),
                 ai.getPrompt(),
                 ai.getGeneratedText(),
                 ai.getReason(),
