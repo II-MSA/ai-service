@@ -12,6 +12,7 @@ public record OrderConfirmedPayload(
         UUID hubId,
         String hubManagerSlackId,
         String hubManagerName,
+        UUID companyManagerId,
         String companyManagerSlackId,
         String companyManagerName,
         String receiverCompanyName) {

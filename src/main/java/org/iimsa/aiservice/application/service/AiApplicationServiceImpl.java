@@ -16,7 +16,6 @@ import org.iimsa.aiservice.domain.model.Receiver;
 import org.iimsa.aiservice.domain.repository.AiRepository;
 import org.iimsa.aiservice.domain.service.AiAnalysisService;
 import org.iimsa.common.util.SecurityUtil;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +65,7 @@ public class AiApplicationServiceImpl implements AiApplicationService {
     }
 
     /**
-     * ai.analysis.request.v1 처리   order->ai - 배송 최적 경로 분석을 수행하고 결과를 발행
+     * ai.analysis.request.v1 처리   delivery->ai - 배송 최적 경로 분석을 수행하고 결과를 발행
      */
     @Override
     @Transactional
@@ -94,28 +93,71 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         log.info("[handleAiAnalysisRequested] AI 분석 완료. aiId={}", ai.getId());
     }
 
+    //주문 완료시. order -> ai
     @Override
     @Transactional
     public void handleOrderConfirmed(OrderConfirmedPayload payload) {
         log.info("[handleOrderConfirmed] orderId={}, hubId={}", payload.orderId(), payload.hubId());
 
-        String prompt = buildOrderConfirmedPrompt(payload);
-
-        Receiver receiver = new Receiver(
+        // 1. 허브 매니저용
+        String hubPrompt = buildHubManagerPrompt(payload);
+        Receiver hubManagerReceiver = new Receiver(
                 payload.hubId(),
                 payload.hubManagerSlackId(),
                 payload.hubManagerName()
         );
+        AiEntity hubAi = AiEntity.create(hubManagerReceiver, hubPrompt);
+        aiRepository.save(hubAi);
+        String hubResult = aiAnalysisService.analyze(hubPrompt);
+        hubAi.complete(hubResult, null);
+        aiRepository.save(hubAi);
+        hubAi.publishCompleted(aiEvent);
 
-        AiEntity ai = AiEntity.create(receiver, prompt);
-        aiRepository.save(ai);
+        // 2. 업체 매니저용
+        String companyPrompt = buildCompanyManagerPrompt(payload);
+        Receiver companyManagerReceiver = new Receiver(
+                payload.companyManagerId(),
+                payload.companyManagerSlackId(),
+                payload.companyManagerName()
+        );
+        AiEntity companyAi = AiEntity.create(companyManagerReceiver, companyPrompt);
+        aiRepository.save(companyAi);
+        String companyResult = aiAnalysisService.analyze(companyPrompt);
+        companyAi.complete(companyResult, null);
+        aiRepository.save(companyAi);
+        companyAi.publishCompleted(aiEvent);
 
-        String result = aiAnalysisService.analyze(prompt);
-        ai.complete(result, "전달 이유"); //reason 고민 해봐야함.
-        aiRepository.save(ai);
-        ai.publishCompleted(aiEvent);
+        log.info("[handleOrderConfirmed] AI 분석 완료. hubAiId={}, companyAiId={}", hubAi.getId(), companyAi.getId());
+    }
 
-        log.info("[handleOrderConfirmed] AI 분석 완료. aiId={}", ai.getId());
+    private String buildHubManagerPrompt(OrderConfirmedPayload payload) {
+        return String.format(
+                "주문이 확인되었습니다. 허브 매니저(%s)에게 아래 정보를 안내해 주세요.\n" +
+                        "- 상품: %s\n" +
+                        "- 수량: %d\n" +
+                        "- 수령 업체: %s\n" +
+                        "- 업체 담당자: %s\n" +
+                        "친절한 말투로 배송 안내 메시지를 작성해 주세요.",
+                payload.hubManagerName(),
+                payload.productName(),
+                payload.quantity(),
+                payload.receiverCompanyName(),
+                payload.companyManagerName()
+        );
+    }
+
+    private String buildCompanyManagerPrompt(OrderConfirmedPayload payload) {
+        return String.format(
+                "주문이 확인되었습니다. 업체 담당자(%s)에게 아래 정보를 안내해 주세요.\n" +
+                        "- 상품: %s\n" +
+                        "- 수량: %d\n" +
+                        "- 수령 업체: %s\n" +
+                        "친절한 말투로 배송 안내 메시지를 작성해 주세요.",
+                payload.companyManagerName(),
+                payload.productName(),
+                payload.quantity(),
+                payload.receiverCompanyName()
+        );
     }
 
     private String buildRouteOptimizationPrompt(AiAnalysisRequestedPayload payload) {
@@ -136,26 +178,6 @@ public class AiApplicationServiceImpl implements AiApplicationService {
         );
         // analyze()에서 .entity를 사용했으므로 프롬포트 끝에 format을 직접 안넣어도 자동으로 붙는다.
     }
-
-    private String buildOrderConfirmedPrompt(OrderConfirmedPayload payload) {
-        var converter = new BeanOutputConverter<>(AnalysisResponse.class);
-        String format = converter.getFormat();
-        return String.format(
-                "주문이 확인되었습니다. 허브 매니저(%s)에게 아래 정보를 안내해 주세요.\n" +
-                        "- 상품: %s\n" +
-                        "- 수량: %d\n" +
-                        "- 수령 업체: %s\n" +
-                        "- 업체 담당자: %s\n" +
-                        "친절한 말투로 배송 안내 메시지를 작성해 주세요.",
-                payload.hubManagerName(),
-                payload.productName(),
-                payload.quantity(),
-                payload.receiverCompanyName(),
-                payload.companyManagerName()
-        );
-    }
-
-
 }
 
 

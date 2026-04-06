@@ -21,7 +21,7 @@ public class OrderConfirmedConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "${kafka.topics.order-confirmed}",
+            topics = "${spring.kafka.topics.order-confirmed}",
             groupId = "${spring.kafka.consumer.group-id}"
     )
     @IdempotentConsumer("AI_ORDER_CONFIRMED")
