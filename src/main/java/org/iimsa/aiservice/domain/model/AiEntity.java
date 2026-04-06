@@ -26,7 +26,6 @@ import org.iimsa.common.domain.BaseEntity;
 @Getter
 @Entity
 @Table(name = "p_ai")
-@SQLRestriction("deleted_at IS NULL")
 @Access(AccessType.FIELD)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AiEntity extends BaseEntity {
@@ -69,10 +68,6 @@ public class AiEntity extends BaseEntity {
 
     public void softDelete(String deletedBy) {
         super.delete(deletedBy);
-    }
-
-    public void publishCompleted(AiEvent aiEvent) {
-        aiEvent.analysisCompleted(this);
     }
 
 }
