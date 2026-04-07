@@ -26,7 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiApplicationServiceImpl 이벤트 핸들러 테스트")
-class AiApplicationServiceImplEventTest {
+public class AiApplicationServiceImplEventTest {
 
     @Mock
     private AiRepository aiRepository;
