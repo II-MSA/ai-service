@@ -1,9 +1,6 @@
 package org.iimsa.aiservice.infrastructure.persistence;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.iimsa.aiservice.domain.model.AiEntity;
 import org.iimsa.aiservice.domain.model.QAiEntity;
@@ -13,8 +10,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 /**
- * AI 레포지토리 구현체 (Port Adapter) - QueryDSL 기반 동적 쿼리
+ * AI 레포지토리 구현체 (Port Adapter)
+ * - QueryDSL 기반 동적 쿼리
  */
 @Repository
 @RequiredArgsConstructor
@@ -39,19 +41,17 @@ public class AiRepositoryImpl implements AiRepository {
     public Page<AiEntity> findByReceiverId(UUID receiverId, Pageable pageable) {
         List<AiEntity> content = queryFactory
                 .selectFrom(ai)
-                .where(ai.receiver.id.eq(receiverId), ai.deletedAt.isNull())
+                .where(ai.receiver.id.eq(receiverId))
                 .orderBy(ai.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        long total = Optional.ofNullable(
-                queryFactory
-                        .select(ai.count())
-                        .from(ai)
-                        .where(ai.receiver.id.eq(receiverId), ai.deletedAt.isNull())
-                        .fetchOne()
-        ).orElse(0L);
+        long total = queryFactory
+                .select(ai.count())
+                .from(ai)
+                .where(ai.receiver.id.eq(receiverId))
+                .fetchOne();
 
         return new PageImpl<>(content, pageable, total);
     }
@@ -60,17 +60,15 @@ public class AiRepositoryImpl implements AiRepository {
     public Page<AiEntity> findAll(Pageable pageable) {
         List<AiEntity> content = queryFactory
                 .selectFrom(ai)
-                .where(ai.deletedAt.isNull())
                 .orderBy(ai.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        long total = Optional.ofNullable(queryFactory
+        long total = queryFactory
                 .select(ai.count())
                 .from(ai)
-                .where(ai.deletedAt.isNull())
-                .fetchOne()).orElse(0L);
+                .fetchOne();
 
         return new PageImpl<>(content, pageable, total);
     }
