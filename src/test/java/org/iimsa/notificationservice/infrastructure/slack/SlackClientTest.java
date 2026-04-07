@@ -12,10 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.web.reactive.function.client.WebClient;
 
-@SpringBootTest(properties = {
-        "slack.token=생략",
-        "slack.url=http://localhost:8890"
-})
+@SpringBootTest
 class SlackClientTest {
 
     private MockWebServer mockWebServer;
@@ -63,5 +60,10 @@ class SlackClientTest {
         assertThat(recordedRequest.getBody().readUtf8())
                 .contains("U0AFCQSBUQY")
                 .contains("테스트 메시지");
+    }
+
+    @Test
+    void test() {
+        slackClient.sendMessage("U0AFCQSBUQY", "테스트 메시지");
     }
 }

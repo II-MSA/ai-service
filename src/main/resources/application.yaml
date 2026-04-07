@@ -33,9 +33,6 @@ spring:
         options:
           model: gpt-4o-mini
 
-slack:
-  token: ${SLACK_TOKEN}
-
   datasource:
     url: jdbc:postgresql://localhost:5432/apang_db
     username: apang
@@ -57,3 +54,7 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:3101/eureka/}
+
+
+slack:
+  token: ${SLACK_TOKEN}

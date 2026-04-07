@@ -17,15 +17,15 @@ public class SlackClient {
 
     private final WebClient webClient;
 
-    @Value("${slack.token}")
-    private String token;
+    private final String token;
 
-    public SlackClient(WebClient.Builder webClientBuilder, @Value("${slack.token}") String token) {
+    public SlackClient(WebClient.Builder webClientBuilder, @Value("${SLACK_TOKEN}") String token) {
         this.token = token;
         this.webClient = webClientBuilder
                 .baseUrl("https://slack.com/api")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
+        log.info("Slack Token: {}", token);
     }
 
     public void sendMessage(String slackId, String message) {
