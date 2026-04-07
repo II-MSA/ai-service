@@ -1,3 +1,66 @@
+server:
+  port: 5120
+
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: ai-service
+  config:
+    import: 'optional:configserver: '
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config-server
+  kafka:
+    consumer:
+      group-id: ai-service-group
+    topics:
+      # Inbound (소비)
+      order-confirmed: order.confirmed.v1
+      delivery-assigned: delivery.assigned.v1
+      ai-analysis-request: ai.analysis.request.v1
+      # Outbound (발행)
+      ai-analysis-done: ai.analysis.done.v1
+    bootstrap-servers: 3.38.135.137:9092
+
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/apang_db
+    username: apang
+    password: apangpass
+    driver-class-name: org.postgresql.Driver
+    # 임시 jpa 설정 ( 이후 config-server로 부터 받을 예정 )
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}
+
+eureka:
+  instance:
+    prefer-ip-address: false
+    hostname: ${HOSTNAME:localhost}
+
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:3101/eureka/}
+
+logging:
+  level:
+    org.apache.kafka: ERROR   # 카프카 소음 차단
+    org.apache.zookeeper: ERROR # 주키퍼 소음 차단
+    org.iimsa: DEBUG
