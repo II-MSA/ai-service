@@ -49,6 +49,7 @@ dependencies {
     //webclient
     testImplementation 'com.squareup.okhttp3:mockwebserver'
 
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // Querydsl APT
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api'

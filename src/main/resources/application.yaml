@@ -58,3 +58,9 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:3101/eureka/}
+
+logging:
+  level:
+    org.apache.kafka: ERROR   # 카프카 소음 차단
+    org.apache.zookeeper: ERROR # 주키퍼 소음 차단
+    org.iimsa: DEBUG
