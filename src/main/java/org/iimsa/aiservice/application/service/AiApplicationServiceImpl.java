@@ -233,7 +233,3 @@ public class AiApplicationServiceImpl implements AiApplicationService {
                 payload.routeSummary()
         );
     }
-
-}
-
-
